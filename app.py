@@ -18,8 +18,7 @@ st.markdown("""
 st.title("Bilt 2.0 Rent Points Calculator")
 
 st.info(
-    body="[Watch video breakdown](https://youtu.be/yrPa71fNy2k) of this tool. This calculator compares the Bilt 2.0 rent points earned from the [two different rent options](https://newsroom.biltrewards.com/biltcardupdate).",
-    icon="ℹ️"
+    body="[Watch video breakdown](https://youtu.be/yrPa71fNy2k) of this calculator. It only calculates the rent points earned.\n\nIt compares the [two different rent options](https://newsroom.biltrewards.com/biltcardupdate) you can choose during onboarding.\n\nIt does not take into account non-rent points earned, sign up bonus and etc.",
 )
 
 # Input fields
