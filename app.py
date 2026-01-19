@@ -21,7 +21,7 @@ st.info(
     body="""
 [Watch video breakdown](https://youtu.be/yrPa71fNy2k) of this calculator. It only calculates the rent points earned. It compares the [two different rent options](https://newsroom.biltrewards.com/biltcardupdate) you can choose during onboarding. It does not take into account non-rent points earned, sign up bonus and etc.
 
-All 3 cards earn 4% the sme Bilt Cash and Option 1 also applies to all 3 cards. So the amount of rent points you earn does not change based on which card you choose. It only depends on how much non-rent amount you spend.
+All 3 cards earn the same 4% of Bilt Cash and Option 1 also applies to all 3 cards. So the amount of rent points you earn does not change based on which card you choose. It only depends on how much non-rent amount you spend.
 
 Your card choice only affect non-rent related points you earn, benefits, sign up bonuses and etc. These are pretty clearly spelled out so I won't be covering them here.
     """,
