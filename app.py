@@ -19,7 +19,7 @@ st.markdown("""
 st.title("Bilt 2.0 Rent Points Calculator")
 
 st.info(
-    body="This calculator compares the Bilt 2.0 rent points earned from the [two different onboarding options](https://newsroom.biltrewards.com/biltcardupdate).",
+    body="[Watch video breakdown](https://youtu.be/yrPa71fNy2k) of this tool. This calculator compares the Bilt 2.0 rent points earned from the [two different rent options](https://newsroom.biltrewards.com/biltcardupdate).",
     icon="ℹ️"
 )
 
