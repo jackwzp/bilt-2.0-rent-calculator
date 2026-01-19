@@ -4,13 +4,29 @@ import pandas as pd
 import numpy as np
 import altair as alt
 
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title="Bilt 2.0 Rent Pts Calculator",
+    page_icon="🚀"
+)
+
+st.markdown("""
+    <style>
+    #MainMenu, header, footer {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
 
 st.title("Bilt 2.0 Rent Points Calculator")
 
+st.info(
+    body="This calculator compares the Bilt 2.0 rent points earned from the [two different onboarding options](https://newsroom.biltrewards.com/biltcardupdate).",
+    icon="ℹ️"
+)
+
 # Input fields
+st.subheader("Enter your rent and non-rent estimates:")
 monthly_rent = st.number_input("Monthly Rent ($)", min_value=0.0, value=2000.0, step=100.0)
-estimated_non_rent = st.number_input("Estimated Monthly Non-Rent Payments ($)", min_value=0.0, value=500.0, step=50.0)
+estimated_non_rent = st.number_input("Estimated Monthly Non-Rent Payments Using Bilt Card ($)", min_value=0.0, value=500.0, step=50.0)
 
 
 
@@ -100,7 +116,7 @@ if monthly_rent > 0:
 
     # Option 1 line only (no points)
     line1 = base.mark_line(color='#1f77b4', strokeWidth=2).encode(
-        y=alt.Y('Option 1:Q', title='Points Earned')
+        y=alt.Y('Option 1:Q', title='Rent Points Earned')
     )
 
     # Option 2 line only (no points)
