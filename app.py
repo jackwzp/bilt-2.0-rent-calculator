@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -28,7 +27,8 @@ st.subheader("Enter your rent and non-rent estimates:")
 monthly_rent = st.number_input("Monthly Rent ($)", min_value=0.0, value=2000.0, step=100.0)
 estimated_non_rent = st.number_input("Estimated Monthly Non-Rent Payments Using Bilt Card ($)", min_value=0.0, value=500.0, step=50.0)
 
-
+# Intersection point color picker
+intersection_color ="#804509"
 
 # Calculation Option 2: Linear Function
 def calculate_method2_points(rent, non_rent):
@@ -37,7 +37,6 @@ def calculate_method2_points(rent, non_rent):
 
 # Calculation Option 1: Step Function
 def calculate_method1_points(rent, non_rent):
-
     non_rent_percentage = (non_rent / rent) * 100 if rent > 0 else 0
     if non_rent_percentage >= 100:
         multiplier = 1.25
@@ -51,13 +50,105 @@ def calculate_method1_points(rent, non_rent):
         return 250 # Earn 250 points with 0 spend
     return multiplier * rent
 
+# Function to find intersection points
+def find_intersections(rent_val):
+    """Find where Option 1 and Option 2 earn equal points"""
+    intersections = []
+
+    # Check various non-rent spend values
+    non_rent_values = np.linspace(0, rent_val * 1.5, 10000)
+
+    prev_diff = None
+    prev_equal = False
+    in_equal_segment = False
+
+    for i, non_rent in enumerate(non_rent_values):
+        m1 = calculate_method1_points(rent_val, non_rent)
+        m2 = calculate_method2_points(rent_val, non_rent)
+        diff = abs(m1 - m2)
+
+        # Check if values are equal (within small tolerance)
+        is_equal = diff < 0.01
+
+        # Detect start of equal segment (lines meet or overlap)
+        if is_equal and not in_equal_segment:
+            # Mark the first point where they become equal
+            # Snap to exact percentage thresholds if close
+            intersection_point = non_rent
+            for pct in [0.25, 0.5, 0.75, 1.0]:
+                threshold = pct * rent_val
+                if abs(non_rent - threshold) < rent_val * 0.01:
+                    intersection_point = threshold
+                    break
+
+            intersections.append({
+                'non_rent': intersection_point,
+                'points': calculate_method1_points(rent_val, intersection_point)
+            })
+            in_equal_segment = True
+
+        # Detect end of equal segment (lines diverge)
+        if not is_equal and in_equal_segment:
+            in_equal_segment = False
+
+        # Detect crossing (sign change when not in equal segment)
+        if prev_diff is not None and not in_equal_segment and not prev_equal:
+            sign_change = (m1 - m2) * (prev_diff) < 0
+            if sign_change:
+                # Refine the intersection point
+                left = non_rent_values[i-1]
+                right = non_rent
+
+                # Binary search for precise intersection
+                for _ in range(50):
+                    mid = (left + right) / 2
+                    m1_mid = calculate_method1_points(rent_val, mid)
+                    m2_mid = calculate_method2_points(rent_val, mid)
+                    diff_mid = m1_mid - m2_mid
+
+                    if abs(diff_mid) < 0.01:
+                        # Snap to exact percentage thresholds if close
+                        intersection_point = mid
+                        for pct in [0.25, 0.5, 0.75, 1.0]:
+                            threshold = pct * rent_val
+                            if abs(mid - threshold) < rent_val * 0.005:
+                                intersection_point = threshold
+                                break
+
+                        intersections.append({
+                            'non_rent': intersection_point,
+                            'points': calculate_method1_points(rent_val, intersection_point)
+                        })
+                        break
+
+                    if np.sign(diff_mid) == np.sign(m1 - m2):
+                        right = mid
+                    else:
+                        left = mid
+
+        prev_diff = m1 - m2
+        prev_equal = is_equal
+
+    # Remove duplicates that are very close to each other
+    filtered_intersections = []
+    for inter in intersections:
+        is_duplicate = False
+        for existing in filtered_intersections:
+            if abs(inter['non_rent'] - existing['non_rent']) < rent_val * 0.01:
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            filtered_intersections.append(inter)
+
+    return filtered_intersections
+
 # Calculate points for user's input
 points_method1 = calculate_method1_points(monthly_rent, estimated_non_rent)
 points_method2 = calculate_method2_points(monthly_rent, estimated_non_rent)
 
 st.subheader("Your Rent Points Earned:")
-st.write(f"Option 1 (Tier Based): {points_method1:.2f} points")  # Corrected display text
-st.write(f"Option 2 (Bilt Cash): {points_method2:.2f} points") # Corrected display text
+st.write(f"Option 1 (Tier Based): {points_method1:.2f} points")
+st.write(f"Option 2 (Bilt Cash): {points_method2:.2f} points")
 
 # Determine the better method
 if points_method1 > points_method2:
@@ -102,6 +193,9 @@ def generate_plot_data(rent_val):
 plot_df = generate_plot_data(monthly_rent)
 
 if monthly_rent > 0:
+    # Find intersection points
+    intersections = find_intersections(monthly_rent)
+
     # Reshape data for proper tooltips on both lines
     plot_df_with_both = plot_df.copy()
 
@@ -178,8 +272,55 @@ if monthly_rent > 0:
         x='x:Q'
     )
 
+    # Add intersection markers
+    intersection_layers = []
+    if intersections:
+        intersection_df = pd.DataFrame([
+            {
+                'Non-Rent Spent ($)': inter['non_rent'],
+                'Points': inter['points']
+            }
+            for inter in intersections
+        ])
+
+        # Intersection point markers
+        intersection_markers = alt.Chart(intersection_df).mark_point(
+            size=300,
+            filled=True,
+            shape='circle',
+            color=intersection_color,
+            opacity=1,
+            stroke='white',
+            strokeWidth=2
+        ).encode(
+            x='Non-Rent Spent ($):Q',
+            y='Points:Q',
+            tooltip=[
+                alt.Tooltip('Non-Rent Spent ($):Q', format='$,.2f', title='Intersection at'),
+                alt.Tooltip('Points:Q', format='.2f', title='Points Earned')
+            ]
+        )
+
+        # Text labels for x-axis values at intersections
+        intersection_text = alt.Chart(intersection_df).mark_text(
+            align='center',
+            baseline='bottom',
+            dy=-15,
+            fontSize=12,
+            fontWeight='bold',
+            color=intersection_color
+        ).encode(
+            x='Non-Rent Spent ($):Q',
+            y='Points:Q',
+            text=alt.Text('Non-Rent Spent ($):Q', format='$,.2f')
+        )
+
+        intersection_layers = [intersection_markers, intersection_text]
+
     # Combine all layers
-    chart = (vertical_line + user_markers + line1 + line2 + points1 + points2).properties(
+    chart = (vertical_line + user_markers + line1 + line2 + points1 + points2 +
+             sum(intersection_layers, alt.LayerChart()) if intersection_layers else
+             vertical_line + user_markers + line1 + line2 + points1 + points2).properties(
         height=500
     ).configure_view(
         strokeWidth=0  # Remove border
@@ -187,6 +328,10 @@ if monthly_rent > 0:
 
     st.altair_chart(chart, use_container_width=True)
 
-    # st.markdown(f"Your current position: ${estimated_non_rent:.2f} non-rent spent, Option 1: {points_method1:.2f} points, Option 2: {points_method2:.2f} points")
+    # Display intersection information
+    if intersections:
+        st.subheader("Breakeven Points:")
+        for i, inter in enumerate(intersections, 1):
+            st.write(f"**Point {i}:** Both options earn **{inter['points']:.2f} points** when non-rent spending is **${inter['non_rent']:.2f}**")
 else:
     st.write("Please enter a monthly rent greater than 0 to see the plots.")
