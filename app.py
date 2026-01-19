@@ -329,6 +329,11 @@ if monthly_rent > 0:
         height=500
     ).configure_view(
         strokeWidth=0  # Remove border
+    ).configure_legend(
+        orient='bottom',
+        title=None,
+        labelFontSize=12,
+        symbolSize=100
     )
 
     st.altair_chart(chart, use_container_width=True)
