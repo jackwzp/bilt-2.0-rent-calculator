@@ -21,10 +21,17 @@ st.set_page_config(
     page_icon=":material/grouped_bar_chart:",
 )
 
+# Show loading indicator immediately
+loading_placeholder = st.empty()
+loading_placeholder.info("Loading Card Comparison...")
+
 # Apply brand CSS
 st.markdown(get_brand_css(), unsafe_allow_html=True)
 
 st.title("Card Comparison")
+
+# Clear loading indicator once content starts rendering
+loading_placeholder.empty()
 st.markdown("Compare all Bilt credit cards to find the best option for your spending habits.")
 
 # Default spending breakdown percentages
@@ -218,49 +225,50 @@ else:
 st.divider()
 
 # --- CALCULATIONS ---
-if simple_mode_auto:
-    # Simple mode: find best config for each card
-    results = []
-    for card in CARD_NAMES:
-        result = find_best_config_for_card(
-            rent=monthly_rent,
-            dining=dining,
-            grocery=grocery,
-            travel=travel,
-            other=other,
-            card=card,
-            cpp=cpp,
-            rent_day_pct=rent_day_pct,
-            include_signup=include_signup,
-            use_hotel_credits=use_hotel_credits,
-            palladium_meets_min_spend=palladium_meets_min_spend,
-            bilt_cash_value=bilt_cash_value,
-        )
-        results.append(result)
-else:
-    # Advanced mode: use specified config
-    results = []
-    for card in CARD_NAMES:
-        result = calculate_card_annual_value(
-            rent=monthly_rent,
-            dining=dining,
-            grocery=grocery,
-            travel=travel,
-            other=other,
-            card=card,
-            rent_option=rent_option,
-            cpp=cpp,
-            rent_day_pct=rent_day_pct,
-            include_signup=include_signup,
-            use_hotel_credits=use_hotel_credits,
-            palladium_meets_min_spend=palladium_meets_min_spend,
-            obsidian_3x_choice=obsidian_3x_choice,
-            bilt_cash_value=bilt_cash_value,
-            convert_bilt_cash_to_rent=convert_bilt_cash_to_rent,
-        )
-        results.append(result)
+with st.spinner("Calculating card values..."):
+    if simple_mode_auto:
+        # Simple mode: find best config for each card
+        results = []
+        for card in CARD_NAMES:
+            result = find_best_config_for_card(
+                rent=monthly_rent,
+                dining=dining,
+                grocery=grocery,
+                travel=travel,
+                other=other,
+                card=card,
+                cpp=cpp,
+                rent_day_pct=rent_day_pct,
+                include_signup=include_signup,
+                use_hotel_credits=use_hotel_credits,
+                palladium_meets_min_spend=palladium_meets_min_spend,
+                bilt_cash_value=bilt_cash_value,
+            )
+            results.append(result)
+    else:
+        # Advanced mode: use specified config
+        results = []
+        for card in CARD_NAMES:
+            result = calculate_card_annual_value(
+                rent=monthly_rent,
+                dining=dining,
+                grocery=grocery,
+                travel=travel,
+                other=other,
+                card=card,
+                rent_option=rent_option,
+                cpp=cpp,
+                rent_day_pct=rent_day_pct,
+                include_signup=include_signup,
+                use_hotel_credits=use_hotel_credits,
+                palladium_meets_min_spend=palladium_meets_min_spend,
+                obsidian_3x_choice=obsidian_3x_choice,
+                bilt_cash_value=bilt_cash_value,
+                convert_bilt_cash_to_rent=convert_bilt_cash_to_rent,
+            )
+            results.append(result)
 
-df = pd.DataFrame(results)
+    df = pd.DataFrame(results)
 
 # Find best card (excluding Bilt 1.0 - it's only for reference)
 df_2_0 = df[df['card'] != 'Bilt 1.0']
@@ -312,7 +320,7 @@ display_df['Total Points'] = display_df['Total Points'].apply(lambda x: f"{x:,.0
 
 st.dataframe(
     display_df,
-    use_container_width=True,
+    width="stretch",
     hide_index=True,
     column_config={
         "Card": st.column_config.TextColumn("Card", width="medium"),
@@ -363,7 +371,7 @@ text = chart.mark_text(
     color=alt.value(COLORS['charcoal'])
 )
 
-st.altair_chart(chart + text, use_container_width=True)
+st.altair_chart(chart + text, width="stretch")
 
 # ------ Points Breakdown by Category
 st.subheader("Points Breakdown by Category")
@@ -449,7 +457,7 @@ total_labels = alt.Chart(totals_df).mark_text(
     color=alt.value(COLORS['charcoal'])
 )
 
-st.altair_chart(stacked_chart + total_labels, use_container_width=True)
+st.altair_chart(stacked_chart + total_labels, width="stretch")
 
 # --- DETAILED BREAKDOWN (Expandable) ---
 with st.expander("View Detailed Breakdown"):

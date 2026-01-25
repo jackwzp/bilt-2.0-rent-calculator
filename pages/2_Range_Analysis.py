@@ -21,8 +21,15 @@ st.set_page_config(
     page_icon=":material/map:",
 )
 
+# Show loading indicator immediately
+loading_placeholder = st.empty()
+loading_placeholder.info("Loading Range Analysis...")
+
 # Apply brand CSS
 st.markdown(get_brand_css(), unsafe_allow_html=True)
+
+# Clear loading indicator once content starts rendering
+loading_placeholder.empty()
 
 # Title with Beta badge
 st.markdown("""
@@ -209,7 +216,7 @@ breakdown_chart = alt.Chart(breakdown_data).mark_bar().encode(
     ]
 ).properties(height=30)
 
-st.altair_chart(breakdown_chart, use_container_width=True)
+st.altair_chart(breakdown_chart, width="stretch")
 
 st.divider()
 
@@ -372,22 +379,23 @@ def generate_optimizer_grid(
 
 # Generate data at user's exact rent
 if your_rent > 0:
-    df_at_rent = generate_data_at_rent(
-        rent=your_rent,
-        cpp=cpp,
-        rent_option=rent_option,
-        include_signup=include_signup,
-        use_hotel_credits=use_hotel_credits,
-        palladium_meets_min_spend=palladium_meets_min_spend,
-        bilt_cash_value=bilt_cash_value,
-        obsidian_3x_choice=obsidian_3x_choice,
-        convert_bilt_cash_to_rent=convert_bilt_cash_to_rent,
-        dining_pct=dining_pct_norm,
-        grocery_pct=grocery_pct_norm,
-        travel_pct=travel_pct_norm,
-        other_pct=other_pct_norm,
-        max_non_rent=max_non_rent,
-    )
+    with st.spinner("Calculating best card ranges..."):
+        df_at_rent = generate_data_at_rent(
+            rent=your_rent,
+            cpp=cpp,
+            rent_option=rent_option,
+            include_signup=include_signup,
+            use_hotel_credits=use_hotel_credits,
+            palladium_meets_min_spend=palladium_meets_min_spend,
+            bilt_cash_value=bilt_cash_value,
+            obsidian_3x_choice=obsidian_3x_choice,
+            convert_bilt_cash_to_rent=convert_bilt_cash_to_rent,
+            dining_pct=dining_pct_norm,
+            grocery_pct=grocery_pct_norm,
+            travel_pct=travel_pct_norm,
+            other_pct=other_pct_norm,
+            max_non_rent=max_non_rent,
+        )
 
     # --- PERSONALIZED RECOMMENDATION ---
     st.subheader("Best Card by Non-Rent Spend Range")
@@ -537,7 +545,7 @@ if your_rent > 0:
         height=400
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width="stretch")
 
     st.caption("""
     **How to read this chart:** Hover to see exact values. Scroll to zoom, drag to pan.
@@ -632,9 +640,9 @@ if your_rent > 0:
         text='label:N'
     )
 
-    st.altair_chart(heatmap + rent_line + rent_label, use_container_width=True)
+    st.altair_chart(heatmap + rent_line + rent_label, width="stretch")
 else:
-    st.altair_chart(heatmap, use_container_width=True)
+    st.altair_chart(heatmap, width="stretch")
 
 st.caption("""
 **How to read this heatmap:** Each colored region shows where a particular card gives the best value.

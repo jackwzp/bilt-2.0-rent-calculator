@@ -263,7 +263,7 @@ if monthly_rent > 0:
         symbolSize=100
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width="stretch")
 
     # Display intersection information
     if intersections:
