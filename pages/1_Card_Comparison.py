@@ -98,6 +98,8 @@ if not advanced_mode:
     # Simple mode: auto-optimize to find best config
     simple_mode_auto = True
 
+    st.text(body="Simple mode auto calculates best rent option for you to get maximum net value. It also auto calculate best 3X choice for Obsidian's Dining or Grocery. It redeems Bilt Cash to maximize rent points. It also assumes you'll be able to fully redeem any left over Bilt Cash if any, hotel credits and meet $4k spend to earn 50,000 bonus poins for Palladium.")
+
 else:
     # Advanced mode: detailed inputs
     simple_mode_auto = False
