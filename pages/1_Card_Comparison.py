@@ -40,12 +40,6 @@ DEFAULT_GROCERY_PCT = 0.30
 DEFAULT_TRAVEL_PCT = 0.15
 DEFAULT_OTHER_PCT = 0.30
 
-# --- SESSION STATE ---
-if 'simple_rent' not in st.session_state:
-    st.session_state.simple_rent = DEFAULT_RENT
-if 'simple_non_rent' not in st.session_state:
-    st.session_state.simple_non_rent = DEFAULT_NON_RENT
-
 # --- INPUTS ---
 st.subheader("Your Monthly Spending")
 
@@ -60,21 +54,20 @@ if not advanced_mode:
         monthly_rent = st.number_input(
             "Monthly Rent/Mortgage ($)",
             min_value=0.0,
-            value=st.session_state.simple_rent,
+            value=DEFAULT_RENT,
             step=100.0,
             help="Your monthly rent or mortgage payment"
         )
-        st.session_state.simple_rent = monthly_rent
 
     with col2:
         total_non_rent = st.number_input(
             "Monthly Non-Rent Spending ($)",
+            key="simple_non_rent",
             min_value=0.0,
-            value=st.session_state.simple_non_rent,
+            value=DEFAULT_NON_RENT,
             step=100.0,
             help="Using breakdown of 25% dining, 30% grocery, 15% travel, 30% other. Choose Advanced mode to customize."
         )
-        st.session_state.simple_non_rent = total_non_rent
 
     with col3:
         cpp_choice = st.selectbox(
@@ -119,7 +112,7 @@ else:
         monthly_rent = st.number_input(
             "Monthly Rent/Mortgage ($)",
             min_value=0.0,
-            value=st.session_state.simple_rent,
+            value=DEFAULT_RENT,
             step=100.0,
         )
         dining = st.number_input(

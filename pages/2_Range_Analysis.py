@@ -111,6 +111,25 @@ with col4:
         key="other_input"
     )
 
+# Calculate total and show warning if not 100%
+total_pct = dining_pct + grocery_pct + travel_pct + other_pct
+
+if total_pct != 100:
+    st.warning(f"Category percentages sum to {total_pct}%. Please adjust to equal 100%.")
+    # Normalize percentages for calculations
+    if total_pct > 0:
+        dining_pct_norm = dining_pct / total_pct * 100
+        grocery_pct_norm = grocery_pct / total_pct * 100
+        travel_pct_norm = travel_pct / total_pct * 100
+        other_pct_norm = other_pct / total_pct * 100
+    else:
+        dining_pct_norm = grocery_pct_norm = travel_pct_norm = other_pct_norm = 25
+else:
+    dining_pct_norm = dining_pct
+    grocery_pct_norm = grocery_pct
+    travel_pct_norm = travel_pct
+    other_pct_norm = other_pct
+
 # Card Options section
 st.markdown("##### Card Options")
 col1, col2, col3 = st.columns(3)
@@ -174,26 +193,6 @@ with col2:
         step=0.1,
         help="1.0 = you can spend all Bilt Cash $ for $. Lower if you can't use it all."
     )
-
-
-# Calculate total and show warning if not 100%
-total_pct = dining_pct + grocery_pct + travel_pct + other_pct
-
-if total_pct != 100:
-    st.warning(f"Category percentages sum to {total_pct}%. Please adjust to equal 100%.")
-    # Normalize percentages for calculations
-    if total_pct > 0:
-        dining_pct_norm = dining_pct / total_pct * 100
-        grocery_pct_norm = grocery_pct / total_pct * 100
-        travel_pct_norm = travel_pct / total_pct * 100
-        other_pct_norm = other_pct / total_pct * 100
-    else:
-        dining_pct_norm = grocery_pct_norm = travel_pct_norm = other_pct_norm = 25
-else:
-    dining_pct_norm = dining_pct
-    grocery_pct_norm = grocery_pct
-    travel_pct_norm = travel_pct
-    other_pct_norm = other_pct
 
 # Visual breakdown bar
 breakdown_data = pd.DataFrame({

@@ -81,13 +81,13 @@ def run_main():
     ---
     **About the Bilt 2.0 Cards:**
 
-    | Card | Fee | Dining | Grocery | Travel | Other | Sign-up |
-    |------|-----|--------|---------|--------|-------|---------|
-    | Blue | $0 | 1X | 1X | 1X | 1X | $100 |
-    | Obsidian | $95 | 3X* | 3X* ($25K cap) | 2X | 1X | $200 |
-    | Palladium | $495 | 2X | 2X | 2X | 2X | $300 + 50K pts |
+    | Card | Fee | Dining | Grocery | Travel | Other | Sign Up Bonus | Hotel Credit | Annual Bilt Cash |
+    |------|-----|--------|---------|--------|-------|---------|--------|--------|
+    | Blue | $0 | 1X | 1X | 1X | 1X | $100 Bilt Cash | $0 | $0 |
+    | Obsidian | $95 | 3X* | 3X* | 2X | 1X | $200 Bilt Cash | $100 | $0 |
+    | Palladium | $495 | 2X | 2X | 2X | 2X | $300 BC + 50K pts | $400 | $200 |
 
-    \*Obsidian card only gives 3x on either Dining or Grocery, not both.
+    \*Obsidian card only gives 3x on either Dining or Grocery, not both. Grocery 3x is capped at $25K.
 
     All 2.0 cards earn 4% Bilt Cash on everyday purchases (when you select option 2) + $50 per 25K points earned towards elite status.
     """)
