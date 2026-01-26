@@ -106,6 +106,7 @@ else:
 
     # Initialize from simple mode values when first entering advanced mode
     base_non_rent = st.session_state.simple_non_rent
+    st.session_state.simple_non_rent = base_non_rent
 
     st.markdown("##### Spending Categories")
     col1, col2 = st.columns(2)
