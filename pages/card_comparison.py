@@ -450,7 +450,7 @@ total_labels = alt.Chart(totals_df).mark_text(
 ).encode(
     x=alt.X('total_points:Q'),
     y=alt.Y('card:N', sort=list(CARD_COLORS.keys())),
-    text=alt.Text('total_points:Q', format=','),
+    text=alt.Text('total_points:Q', format=',.0f'),
     color=alt.value(COLORS['charcoal'])
 )
 
