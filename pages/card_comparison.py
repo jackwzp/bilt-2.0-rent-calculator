@@ -190,7 +190,8 @@ else:
             options=[1, 2],
             format_func=lambda x: "Option 1 (Tier-based)" if x == 1 else "Option 2 (Bilt Cash)",
             horizontal=True,
-            help="How rent points are calculated for Bilt 2.0 cards"
+            help="How rent points are calculated for Bilt 2.0 cards",
+            key="rent_option"
         )
 
         # Show sub-option only when Option 2 is selected
@@ -460,7 +461,7 @@ with st.expander("View Detailed Breakdown"):
     for num, row in df.iterrows():
         st.markdown(f"### {row['card']}")
 
-        if simple_mode_auto and row['card'] != "Bilt 1.0":
+        if row['card'] != "Bilt 1.0":
             rent_opt_label = "Option 1" if row['rent_option'] == 1 else "Option 2"
             if row['card'] == "Obsidian" and row['obsidian_3x_choice']:
                 obs_label = "3X Dining" if row['obsidian_3x_choice'] == "dining" else "3X Grocery"
@@ -472,7 +473,11 @@ with st.expander("View Detailed Breakdown"):
 
         with col1:
             st.markdown("**Points**")
-            st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points']/12:,.0f}/mo)")
+            if row['bonus_rent_points_from_cash'] > 0:
+                base_rent_pts = row['rent_points'] - row['bonus_rent_points_from_cash']
+                st.write(f"Rent: {row['rent_points']:,.0f} ({base_rent_pts:,.0f} base + {row['bonus_rent_points_from_cash']:,.0f} from Bilt Cash)")
+            else:
+                st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points']/12:,.0f}/mo)")
             st.write(f"Non-Rent Total: {row['total_non_rent_points']:,.0f} ({row['total_non_rent_points']/12:,.0f}/mo)")
             # For Bilt 1.0, show base rates and rent day bonus separately
             if row['card'] == 'Bilt 1.0' and row['rent_day_bonus_points'] > 0:
@@ -501,20 +506,30 @@ with st.expander("View Detailed Breakdown"):
             if row['bilt_cash_4pct'] > 0:
                 st.write(f"4% on purchases: ${row['bilt_cash_4pct']:,.2f}")
                 if row['bilt_cash_used_for_rent'] > 0:
-                    st.write(f"Used for rent redemption: -${row['bilt_cash_used_for_rent']:,.2f}")
+                    st.write(f"Used for rent points: -${min(row['bilt_cash_used_for_rent'], row['bilt_cash_4pct']):,.2f}")
                     st.write(f"Remaining from 4%: ${row['bilt_cash_remaining_4pct']:,.2f}")
             else:
                 if row['card'] == "Bilt 1.0":
                     st.write("N/A (Bilt 1.0)")
-                else:
+                elif row['rent_option'] == 1:
                     st.write("$0 (Option 1 selected)")
+                else:
+                    st.write("$0 (No non-rent spending)")
             # $50 per 25K bonus not applicable to Bilt 1.0
             if row['card'] != "Bilt 1.0":
                 st.write(f"\$50 per 25K pts: ${row['bilt_cash_25k_bonus']:,.2f}")
             if row['signup_cash'] > 0:
-                st.write(f"Sign-up bonus: ${row['signup_cash']:,.2f}")
+                if row['signup_cash_remaining'] < row['signup_cash']:
+                    used = row['signup_cash'] - row['signup_cash_remaining']
+                    st.write(f"Sign-up bonus: \${row['signup_cash']:,.2f} (-\${used:,.2f} for rent pts)")
+                else:
+                    st.write(f"Sign-up bonus: \${row['signup_cash']:,.2f}")
             if row['annual_bilt_cash'] > 0:
-                st.write(f"Annual benefit: ${row['annual_bilt_cash']:,.2f}")
+                if row['annual_bilt_cash_remaining'] < row['annual_bilt_cash']:
+                    used = row['annual_bilt_cash'] - row['annual_bilt_cash_remaining']
+                    st.write(f"Annual benefit: \${row['annual_bilt_cash']:,.2f} (-\${used:,.2f} for rent pts)")
+                else:
+                    st.write(f"Annual benefit: \${row['annual_bilt_cash']:,.2f}")
             st.write(f"**Total: ${row['total_bilt_cash']:,.2f}**")
             if bilt_cash_value < 1.0:
                 st.write(f"Effective (@ {bilt_cash_value:.0%}): ${row['effective_bilt_cash']:,.2f}")
