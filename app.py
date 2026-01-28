@@ -96,9 +96,13 @@ def run_main():
 
     All 2.0 cards earn 4% Bilt Cash on everyday purchases (when you select option 2) + $50 per 25K points earned towards elite status."""
 
-    st.markdown(f"""
+    st.markdown("""
     Welcome to the Bilt Calculator! This tool helps you compare Bilt credit cards and find the best option for your spending habits.
+    """)
 
+    st.video("https://youtu.be/RosRrk-gXDc")
+
+    st.markdown(f"""
     ### Available Tools
 
     👈 **Select a page from the sidebar to get started!**
