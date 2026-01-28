@@ -507,10 +507,13 @@ with st.expander("View Detailed Breakdown"):
 
         with col1:
             st.markdown("**Points**")
-            if row['rent_points_from_bonus_cash'] > 0:
-                st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points_from_4pct']:,.0f} from 4% + {row['rent_points_from_bonus_cash']:,.0f} from other Bilt Cash)")
-            elif row['rent_points_from_4pct'] > 0:
-                st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points_from_4pct']:,.0f} from 4%)")
+            # Use .get() with defaults for newer fields to handle cached data
+            rent_pts_from_4pct = row.get('rent_points_from_4pct', 0) or 0
+            rent_pts_from_bonus = row.get('rent_points_from_bonus_cash', 0) or 0
+            if rent_pts_from_bonus > 0:
+                st.write(f"Rent: {row['rent_points']:,.0f} ({rent_pts_from_4pct:,.0f} from 4% + {rent_pts_from_bonus:,.0f} from other Bilt Cash)")
+            elif rent_pts_from_4pct > 0:
+                st.write(f"Rent: {row['rent_points']:,.0f} ({rent_pts_from_4pct:,.0f} from 4%)")
             else:
                 st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points']/12:,.0f}/mo)")
             st.write(f"Non-Rent Total: {row['total_non_rent_points']:,.0f} ({row['total_non_rent_points']/12:,.0f}/mo)")
@@ -538,10 +541,14 @@ with st.expander("View Detailed Breakdown"):
 
         with col2:
             st.markdown("**Bilt Cash**")
+            # Use .get() with defaults for newer fields to handle cached data
+            bilt_cash_4pct_used = row.get('bilt_cash_4pct_used_for_rent', 0) or 0
+            bilt_cash_25k_used = row.get('bilt_cash_25k_used_for_rent', 0) or 0
+            bilt_cash_25k_total = row.get('bilt_cash_25k_total', row.get('bilt_cash_25k_bonus', 0)) or 0
             if row['bilt_cash_4pct'] > 0:
-                if row['bilt_cash_4pct_used_for_rent'] > 0:
-                    pts_from_4pct = row['rent_points_from_4pct']
-                    st.write(f"4% on purchases: \${row['bilt_cash_4pct']:,.2f} (-\${row['bilt_cash_4pct_used_for_rent']:,.2f} for {pts_from_4pct:,.0f} rent pts)")
+                if bilt_cash_4pct_used > 0:
+                    pts_from_4pct = row.get('rent_points_from_4pct', 0) or 0
+                    st.write(f"4% on purchases: \${row['bilt_cash_4pct']:,.2f} (-\${bilt_cash_4pct_used:,.2f} for {pts_from_4pct:,.0f} rent pts)")
                 else:
                     st.write(f"4% on purchases: ${row['bilt_cash_4pct']:,.2f}")
             else:
@@ -553,9 +560,9 @@ with st.expander("View Detailed Breakdown"):
                     st.write("$0 (No non-rent spending)")
             # $50 per 25K bonus not applicable to Bilt 1.0
             if row['card'] != "Bilt 1.0":
-                if row['bilt_cash_25k_used_for_rent'] > 0:
-                    pts_from_25k = row['bilt_cash_25k_used_for_rent'] * 100 / 3
-                    st.write(f"\$50 per 25K pts: \${row['bilt_cash_25k_total']:,.2f} (-\${row['bilt_cash_25k_used_for_rent']:,.2f} for {pts_from_25k:,.0f} rent pts)")
+                if bilt_cash_25k_used > 0:
+                    pts_from_25k = bilt_cash_25k_used * 100 / 3
+                    st.write(f"\$50 per 25K pts: \${bilt_cash_25k_total:,.2f} (-\${bilt_cash_25k_used:,.2f} for {pts_from_25k:,.0f} rent pts)")
                 else:
                     st.write(f"\$50 per 25K pts: ${row['bilt_cash_25k_bonus']:,.2f}")
             if row['signup_cash'] > 0:
