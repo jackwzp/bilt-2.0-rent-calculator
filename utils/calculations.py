@@ -214,47 +214,97 @@ def calculate_card_annual_value(
     annual_bilt_cash_benefit = card_info["annual_bilt_cash"]
 
     # Bilt Cash used for rent redemption (only for Option 2 with conversion)
-    # Can use 4% Bilt Cash, sign-up bonus cash, and annual Bilt Cash for additional rent points
+    # Can use 4% Bilt Cash, sign-up bonus cash, annual Bilt Cash, AND $50 per 25K for additional rent points
+    # The $50 per 25K is iterative: as you earn more rent points, you get more $50 bonuses,
+    # which can be converted to more rent points, until you hit your annual rent cap.
     bilt_cash_used_for_rent = 0
-    bonus_rent_points_from_cash = 0
+    bilt_cash_4pct_used_for_rent = 0
+    rent_points_from_4pct = 0
+    rent_points_from_bonus_cash = 0
+    bilt_cash_25k_used_for_rent = 0
+    bilt_cash_25k_bonus = 0
 
     if rent_option == 2 and convert_bilt_cash_to_rent and card != "Bilt 1.0":
-        # How much Bilt Cash was needed to earn the rent points from non-rent spending
+        # Rent points from 4% Bilt Cash
+        rent_points_from_4pct = annual_rent_points  # This was calculated by method2
+        # How much 4% Bilt Cash was needed to earn the rent points from non-rent spending
         # $3 Bilt Cash = 100 rent points
-        bilt_cash_used_for_rent = min(bilt_cash_4pct, 3 * annual_rent_points / 100)
+        bilt_cash_4pct_used_for_rent = min(bilt_cash_4pct, 3 * annual_rent_points / 100)
+        bilt_cash_used_for_rent = bilt_cash_4pct_used_for_rent
 
-        # Check if there's remaining rent capacity and available bonus Bilt Cash
-        remaining_rent_capacity = annual_rent_total - annual_rent_points
-        if remaining_rent_capacity > 0:
-            # Available bonus Bilt Cash (sign-up cash + annual benefit) that can be used for more rent points
-            available_bonus_cash = signup_cash + annual_bilt_cash_benefit
-            # How much Bilt Cash needed to fill remaining rent capacity
-            # $3 = 100 points, so $X = (remaining_capacity / 100) * 3
-            cash_needed_for_remaining = remaining_rent_capacity * 3 / 100
-            # Use available bonus cash up to what's needed
-            bonus_cash_for_rent = min(available_bonus_cash, cash_needed_for_remaining)
-            # Convert to additional rent points
-            bonus_rent_points_from_cash = bonus_cash_for_rent * 100 / 3
-            # Add to rent points and track Bilt Cash used
-            annual_rent_points += bonus_rent_points_from_cash
-            bilt_cash_used_for_rent += bonus_cash_for_rent
-            # Update total points
-            total_points = annual_rent_points + total_non_rent_points
+        # Fixed bonus cash pool (signup + annual benefit)
+        bonus_cash_pool = signup_cash + annual_bilt_cash_benefit
+        bonus_cash_used_for_rent = 0
 
-    # $50 Bilt Cash per 25,000 points earned (not applicable to Bilt 1.0)
-    # Calculated after bonus rent points are added
-    if card == "Bilt 1.0":
-        bilt_cash_25k_bonus = 0
+        # Iteratively convert bonus cash (including $50 per 25K) to rent points
+        # Each iteration: earn $50 per 25K based on current points, use it for more rent points
+        # Continue until rent capacity is filled or no more cash available
+        for _ in range(100):  # Max iterations (converges quickly)
+            remaining_rent_capacity = annual_rent_total - annual_rent_points
+            if remaining_rent_capacity <= 0.01:
+                break
+
+            # Calculate current $50 per 25K bonus based on current total points
+            # Note: Only rent + non-rent points qualify, NOT signup bonus points
+            current_total = annual_rent_points + total_non_rent_points
+            current_25k_bonus = (current_total // 25000) * 50
+
+            # Total available cash = fixed pool + current 25K bonus - what's been used
+            available_cash = bonus_cash_pool + current_25k_bonus - bonus_cash_used_for_rent
+
+            if available_cash <= 0.01:
+                break
+
+            # How much cash needed to fill remaining rent capacity
+            cash_needed = remaining_rent_capacity * 3 / 100
+
+            # Use available cash up to what's needed
+            cash_to_use = min(available_cash, cash_needed)
+
+            if cash_to_use <= 0.01:
+                break
+
+            # Convert to rent points
+            new_rent_points = cash_to_use * 100 / 3
+            annual_rent_points += new_rent_points
+            rent_points_from_bonus_cash += new_rent_points
+            bonus_cash_used_for_rent += cash_to_use
+
+        # Final $50 per 25K calculation after all conversions
+        final_total = annual_rent_points + total_non_rent_points
+        final_25k_bonus = (final_total // 25000) * 50
+
+        # Track how much of each source was used for rent
+        # Order of usage: signup first, then annual, then $50 per 25K
+        signup_used = min(bonus_cash_used_for_rent, signup_cash)
+        annual_used = min(max(0, bonus_cash_used_for_rent - signup_cash), annual_bilt_cash_benefit)
+        bilt_cash_25k_used_for_rent = max(0, bonus_cash_used_for_rent - signup_cash - annual_bilt_cash_benefit)
+
+        # Remaining $50 per 25K bonus (what wasn't used for rent)
+        bilt_cash_25k_bonus = max(0, final_25k_bonus - bilt_cash_25k_used_for_rent)
+
+        # Update total Bilt Cash used for rent
+        bilt_cash_used_for_rent = bilt_cash_4pct_used_for_rent + bonus_cash_used_for_rent
+
+        # Calculate remaining amounts
+        signup_cash_remaining = signup_cash - signup_used
+        annual_bilt_cash_remaining = annual_bilt_cash_benefit - annual_used
+
+        # Update total points
+        total_points = annual_rent_points + total_non_rent_points
+
     else:
-        bilt_cash_25k_bonus = (total_points // 25000) * 50
+        # For Option 1, Bilt 1.0, or Option 2 without conversion
+        if card != "Bilt 1.0":
+            bilt_cash_25k_bonus = (total_points // 25000) * 50
+        signup_cash_remaining = signup_cash
+        annual_bilt_cash_remaining = annual_bilt_cash_benefit
+
+    # Keep bonus_rent_points_from_cash for backwards compatibility (used in display)
+    bonus_rent_points_from_cash = rent_points_from_bonus_cash
 
     # Remaining Bilt Cash after rent redemption
-    bilt_cash_remaining_4pct = bilt_cash_4pct - min(bilt_cash_used_for_rent, bilt_cash_4pct)
-
-    # Calculate remaining sign-up and annual cash after rent conversion
-    cash_used_from_bonus = max(0, bilt_cash_used_for_rent - bilt_cash_4pct)
-    signup_cash_remaining = max(0, signup_cash - cash_used_from_bonus)
-    annual_bilt_cash_remaining = max(0, annual_bilt_cash_benefit - max(0, cash_used_from_bonus - signup_cash))
+    bilt_cash_remaining_4pct = bilt_cash_4pct - bilt_cash_4pct_used_for_rent
 
     # Total Bilt Cash (excluding what was used for rent)
     total_bilt_cash = (
@@ -289,7 +339,9 @@ def calculate_card_annual_value(
         "annual_fee": annual_fee,
         # Points breakdown
         "rent_points": annual_rent_points,
-        "bonus_rent_points_from_cash": bonus_rent_points_from_cash,
+        "rent_points_from_4pct": rent_points_from_4pct,
+        "rent_points_from_bonus_cash": rent_points_from_bonus_cash,
+        "bonus_rent_points_from_cash": bonus_rent_points_from_cash,  # For backwards compatibility
         "dining_points": annual_dining_points,
         "dining_multiplier": dining_multiplier,
         "grocery_points": annual_grocery_points,
@@ -306,9 +358,12 @@ def calculate_card_annual_value(
         "points_value": points_value,
         # Bilt Cash breakdown
         "bilt_cash_4pct": bilt_cash_4pct,
+        "bilt_cash_4pct_used_for_rent": bilt_cash_4pct_used_for_rent,
         "bilt_cash_used_for_rent": bilt_cash_used_for_rent,
         "bilt_cash_remaining_4pct": bilt_cash_remaining_4pct,
         "bilt_cash_25k_bonus": bilt_cash_25k_bonus,
+        "bilt_cash_25k_used_for_rent": bilt_cash_25k_used_for_rent,
+        "bilt_cash_25k_total": bilt_cash_25k_bonus + bilt_cash_25k_used_for_rent,
         "signup_cash": signup_cash,
         "signup_cash_remaining": signup_cash_remaining,
         "annual_bilt_cash": annual_bilt_cash_benefit,

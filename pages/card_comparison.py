@@ -46,6 +46,45 @@ st.subheader("Your Monthly Spending")
 # Simple/Advanced toggle
 advanced_mode = st.toggle("Advanced Mode", value=False, help="Show detailed spending categories and additional options")
 
+# Initialize session state for all widget keys on first run
+if 'simple_rent' not in st.session_state:
+    st.session_state.simple_rent = DEFAULT_RENT
+if 'simple_non_rent' not in st.session_state:
+    st.session_state.simple_non_rent = DEFAULT_NON_RENT
+if 'adv_rent' not in st.session_state:
+    st.session_state.adv_rent = DEFAULT_RENT
+if 'adv_dining' not in st.session_state:
+    st.session_state.adv_dining = DEFAULT_NON_RENT * DEFAULT_DINING_PCT
+if 'adv_grocery' not in st.session_state:
+    st.session_state.adv_grocery = DEFAULT_NON_RENT * DEFAULT_GROCERY_PCT
+if 'adv_travel' not in st.session_state:
+    st.session_state.adv_travel = DEFAULT_NON_RENT * DEFAULT_TRAVEL_PCT
+if 'adv_other' not in st.session_state:
+    st.session_state.adv_other = DEFAULT_NON_RENT * DEFAULT_OTHER_PCT
+if 'prev_advanced_mode' not in st.session_state:
+    st.session_state.prev_advanced_mode = None
+
+# Handle mode transition BEFORE widgets render
+if st.session_state.prev_advanced_mode is not None and advanced_mode != st.session_state.prev_advanced_mode:
+    if advanced_mode:
+        # Switching TO advanced mode - copy simple values to advanced widgets
+        st.session_state.adv_rent = st.session_state.simple_rent
+        st.session_state.adv_dining = st.session_state.simple_non_rent * DEFAULT_DINING_PCT
+        st.session_state.adv_grocery = st.session_state.simple_non_rent * DEFAULT_GROCERY_PCT
+        st.session_state.adv_travel = st.session_state.simple_non_rent * DEFAULT_TRAVEL_PCT
+        st.session_state.adv_other = st.session_state.simple_non_rent * DEFAULT_OTHER_PCT
+    else:
+        # Switching TO simple mode - aggregate advanced values back to simple
+        st.session_state.simple_rent = st.session_state.adv_rent
+        st.session_state.simple_non_rent = (
+            st.session_state.adv_dining +
+            st.session_state.adv_grocery +
+            st.session_state.adv_travel +
+            st.session_state.adv_other
+        )
+
+st.session_state.prev_advanced_mode = advanced_mode
+
 if not advanced_mode:
     # Simple mode: just rent and total non-rent
     col1, col2, col3 = st.columns(3)
@@ -53,8 +92,8 @@ if not advanced_mode:
     with col1:
         monthly_rent = st.number_input(
             "Monthly Rent/Mortgage ($)",
+            key="simple_rent",
             min_value=0.0,
-            value=DEFAULT_RENT,
             step=100.0,
             help="Your monthly rent or mortgage payment"
         )
@@ -64,7 +103,6 @@ if not advanced_mode:
             "Monthly Non-Rent Spending ($)",
             key="simple_non_rent",
             min_value=0.0,
-            value=DEFAULT_NON_RENT,
             step=100.0,
             help="Using breakdown of 25% dining, 30% grocery, 15% travel, 30% other. Choose Advanced mode to customize."
         )
@@ -104,44 +142,40 @@ else:
     # Advanced mode: detailed inputs
     simple_mode_auto = False
 
-    # Initialize from simple mode values when first entering advanced mode
-    base_non_rent = st.session_state.simple_non_rent
-    st.session_state.simple_non_rent = base_non_rent
-
     st.markdown("##### Spending Categories")
     col1, col2 = st.columns(2)
 
     with col1:
         monthly_rent = st.number_input(
             "Monthly Rent/Mortgage ($)",
+            key="adv_rent",
             min_value=0.0,
-            value=DEFAULT_RENT,
             step=100.0,
         )
         dining = st.number_input(
             "Monthly Dining ($)",
+            key="adv_dining",
             min_value=0.0,
-            value=float(base_non_rent * DEFAULT_DINING_PCT),
             step=50.0,
         )
         grocery = st.number_input(
             "Monthly Groceries ($)",
+            key="adv_grocery",
             min_value=0.0,
-            value=float(base_non_rent * DEFAULT_GROCERY_PCT),
             step=50.0,
         )
 
     with col2:
         travel = st.number_input(
             "Monthly Travel ($)",
+            key="adv_travel",
             min_value=0.0,
-            value=float(base_non_rent * DEFAULT_TRAVEL_PCT),
             step=50.0,
         )
         other = st.number_input(
             "Monthly Other ($)",
+            key="adv_other",
             min_value=0.0,
-            value=float(base_non_rent * DEFAULT_OTHER_PCT),
             step=50.0,
         )
         total_non_rent = dining + grocery + travel + other
@@ -473,9 +507,10 @@ with st.expander("View Detailed Breakdown"):
 
         with col1:
             st.markdown("**Points**")
-            if row['bonus_rent_points_from_cash'] > 0:
-                base_rent_pts = row['rent_points'] - row['bonus_rent_points_from_cash']
-                st.write(f"Rent: {row['rent_points']:,.0f} ({base_rent_pts:,.0f} base + {row['bonus_rent_points_from_cash']:,.0f} from Bilt Cash)")
+            if row['rent_points_from_bonus_cash'] > 0:
+                st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points_from_4pct']:,.0f} from 4% + {row['rent_points_from_bonus_cash']:,.0f} from other Bilt Cash)")
+            elif row['rent_points_from_4pct'] > 0:
+                st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points_from_4pct']:,.0f} from 4%)")
             else:
                 st.write(f"Rent: {row['rent_points']:,.0f} ({row['rent_points']/12:,.0f}/mo)")
             st.write(f"Non-Rent Total: {row['total_non_rent_points']:,.0f} ({row['total_non_rent_points']/12:,.0f}/mo)")
@@ -504,10 +539,11 @@ with st.expander("View Detailed Breakdown"):
         with col2:
             st.markdown("**Bilt Cash**")
             if row['bilt_cash_4pct'] > 0:
-                st.write(f"4% on purchases: ${row['bilt_cash_4pct']:,.2f}")
-                if row['bilt_cash_used_for_rent'] > 0:
-                    st.write(f"Used for rent points: -${min(row['bilt_cash_used_for_rent'], row['bilt_cash_4pct']):,.2f}")
-                    st.write(f"Remaining from 4%: ${row['bilt_cash_remaining_4pct']:,.2f}")
+                if row['bilt_cash_4pct_used_for_rent'] > 0:
+                    pts_from_4pct = row['rent_points_from_4pct']
+                    st.write(f"4% on purchases: \${row['bilt_cash_4pct']:,.2f} (-\${row['bilt_cash_4pct_used_for_rent']:,.2f} for {pts_from_4pct:,.0f} rent pts)")
+                else:
+                    st.write(f"4% on purchases: ${row['bilt_cash_4pct']:,.2f}")
             else:
                 if row['card'] == "Bilt 1.0":
                     st.write("N/A (Bilt 1.0)")
@@ -517,17 +553,23 @@ with st.expander("View Detailed Breakdown"):
                     st.write("$0 (No non-rent spending)")
             # $50 per 25K bonus not applicable to Bilt 1.0
             if row['card'] != "Bilt 1.0":
-                st.write(f"\$50 per 25K pts: ${row['bilt_cash_25k_bonus']:,.2f}")
+                if row['bilt_cash_25k_used_for_rent'] > 0:
+                    pts_from_25k = row['bilt_cash_25k_used_for_rent'] * 100 / 3
+                    st.write(f"\$50 per 25K pts: \${row['bilt_cash_25k_total']:,.2f} (-\${row['bilt_cash_25k_used_for_rent']:,.2f} for {pts_from_25k:,.0f} rent pts)")
+                else:
+                    st.write(f"\$50 per 25K pts: ${row['bilt_cash_25k_bonus']:,.2f}")
             if row['signup_cash'] > 0:
                 if row['signup_cash_remaining'] < row['signup_cash']:
                     used = row['signup_cash'] - row['signup_cash_remaining']
-                    st.write(f"Sign-up bonus: \${row['signup_cash']:,.2f} (-\${used:,.2f} for rent pts)")
+                    pts_from_signup = used * 100 / 3
+                    st.write(f"Sign-up bonus: \${row['signup_cash']:,.2f} (-\${used:,.2f} for {pts_from_signup:,.0f} rent pts)")
                 else:
                     st.write(f"Sign-up bonus: \${row['signup_cash']:,.2f}")
             if row['annual_bilt_cash'] > 0:
                 if row['annual_bilt_cash_remaining'] < row['annual_bilt_cash']:
                     used = row['annual_bilt_cash'] - row['annual_bilt_cash_remaining']
-                    st.write(f"Annual benefit: \${row['annual_bilt_cash']:,.2f} (-\${used:,.2f} for rent pts)")
+                    pts_from_annual = used * 100 / 3
+                    st.write(f"Annual benefit: \${row['annual_bilt_cash']:,.2f} (-\${used:,.2f} for {pts_from_annual:,.0f} rent pts)")
                 else:
                     st.write(f"Annual benefit: \${row['annual_bilt_cash']:,.2f}")
             st.write(f"**Total: ${row['total_bilt_cash']:,.2f}**")
